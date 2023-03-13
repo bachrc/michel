@@ -1,0 +1,72 @@
+default interface types {
+  variant value {
+    text(string),
+    datetime(string),
+    number(u32),
+  }
+
+  record field {
+    name: string,
+    value: value
+  }
+
+  record document {
+    identifier: string,
+    fields: list<field>
+  }
+
+  variant error {
+    invalid-value(string)
+  }
+
+  record plugin-info {
+    name: string,
+    description: string,
+    version: string,
+    icon: option<string>,
+    url: option<string>
+  }
+
+  record plugin-config {
+    fs-access: list<fs-access>,
+  }
+
+  record fs-access {
+    host-path: string,
+    fsnotify: bool
+  }
+
+  record entry {
+    title: string,
+    description: string,
+    preview: option<string>
+  }
+}
+
+interface michel-api {
+  use self.types.{entry,document}
+
+  hi: func(name: string) -> string
+  send-entry-for-input: func(input: string, entries: list<entry>)
+  new-document-for-index: func(index: string, document: document)
+  search-in-index: func(index: string, query: string) -> list<document>
+  init-index: func(index: string)
+}
+
+interface plugin-api {
+  use self.types.{plugin-info, plugin-config, entry, error}
+
+  info: func() -> plugin-info
+  index: func() -> result<_, error>
+  config: func() -> plugin-config
+  update-config: func(config: plugin-config) -> result<_, error>
+  for-input: func(input: string) -> list<entry>
+  autocomplete: func(input: string) -> option<string>
+  debug: func() -> string
+}
+
+default world michel {
+  import michel-api: self.michel-api
+
+  export plugin-api: self.plugin-api
+}

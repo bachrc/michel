@@ -1,0 +1,99 @@
+{
+  "build": {
+    "beforeBuildCommand": "pnpm run build",
+    "beforeDevCommand": "pnpm run dev",
+    "devPath": "http://localhost:5173",
+    "distDir": "../build"
+  },
+  "package": {
+    "productName": "michel",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "window": {
+        "all": true
+      },
+      "globalShortcut": {
+        "all": true
+      },
+      "path": {
+        "all": true
+      },
+      "app": {
+        "all": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "category": "DeveloperTool",
+      "copyright": "",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "identifier": "net.cyberendroit.michel",
+      "longDescription": "",
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null
+      },
+      "resources": [],
+      "shortDescription": "",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
+    },
+    "security": {
+      "csp": null
+    },
+    "systemTray": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    },
+    "updater": {
+      "active": false
+    },
+    "windows": [
+      {
+        "label": "search-bar",
+        "fullscreen": false,
+        "height": 500,
+        "resizable": true,
+        "title": "michel",
+        "center": true,
+        "decorations": false,
+        "width": 800,
+        "url": "search-bar.html",
+        "visible": false,
+        "skipTaskbar": true
+      }, {
+        "label": "settings",
+        "fullscreen": false,
+        "height": 700,
+        "resizable": true,
+        "title": "Michel Settings",
+        "center": true,
+        "decorations": true,
+        "width": 1200,
+        "url": "settings.html",
+        "visible": false,
+        "skipTaskbar": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+[package]
+name = "michel_index"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+milli = { git = "https://github.com/meilisearch/meilisearch" }
+serde_json = "1.0.93"
+anyhow = "1.0.69"
+tempdir = "0.3.7"
+michel_core = { path = "../michel_core" }

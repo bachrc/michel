@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "michel_desktop/src-tauri",
+    "michel_core",
+    "michel_index"
+]
