@@ -8,6 +8,11 @@ impl From<types::Document> for PersistedDocument {
     fn from(value: types::Document) -> Self {
         let mut map: PersistedDocument = PersistedDocument::new();
 
+        map.insert(
+            "id".to_string(),
+            serde_json::Value::String(String::from(&value.identifier)),
+        );
+
         for field in value.fields {
             map.insert(field.name, from_wasi_to_json(&field.value));
         }
@@ -29,6 +34,7 @@ pub struct Index {
 }
 
 pub trait MichelPersistence: Send + Sync {
+    fn init_index(&mut self, name: String) -> Result<()>;
     fn add_document(&self, index: Index, document: PersistedDocument) -> Result<()>;
     fn search_document(
         &self,

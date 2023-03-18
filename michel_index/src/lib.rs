@@ -1,7 +1,9 @@
 use anyhow::{anyhow, Result};
 use michel_core::persistence::MichelPersistence;
-use milli::{heed, Search, SearchResult};
+use milli::documents::{DocumentsBatchBuilder, DocumentsBatchReader};
+use milli::{heed, update, Search, SearchResult};
 use std::collections::HashMap;
+use std::io::Cursor;
 use tempdir;
 use tempdir::TempDir;
 
@@ -29,35 +31,36 @@ impl MilliPersistence {
     fn get_index(&self, index: michel_core::persistence::Index) -> Option<&milli::Index> {
         return self.indexes.get(&index.name);
     }
+}
 
-    fn create_index(&mut self, michel_index: michel_core::persistence::Index) -> Result<()> {
-        if self.indexes.contains_key(&michel_index.name) {
+impl MichelPersistence for MilliPersistence {
+    fn init_index(&mut self, index_name: String) -> Result<()> {
+        if self.indexes.contains_key(&index_name) {
             return Err(anyhow!("index already exists"));
         }
 
-        let path = TempDir::new(&michel_index.name)?;
-
+        let path = TempDir::new(&index_name)?;
+        println!(
+            "Le répertoire temp c'est ça : {}",
+            String::from(&path.path().to_string_lossy().to_string())
+        );
         std::fs::create_dir_all(&path)?;
+        println!("isok");
         let mut options = heed::EnvOpenOptions::new();
         options.map_size(MAX_MAP_SIZE);
 
         let index = milli::Index::new(options, &path).map_err(anyhow::Error::from)?;
 
-        self.indexes.insert(michel_index.name, index);
+        self.indexes.insert(index_name, index);
 
         Ok(())
     }
-}
 
-impl MichelPersistence for MilliPersistence {
     fn add_document(
         &self,
         index: michel_core::persistence::Index,
         document: Document,
     ) -> Result<()> {
-        Ok(())
-
-        /*
         let milli_index = self.get_index(index).ok_or(anyhow!("index not created"))?;
 
         // Create a batch builder to convert json_documents into milli's format
@@ -87,7 +90,7 @@ impl MichelPersistence for MilliPersistence {
         indexing_result?; // check to make sure there is no UserError
         builder.execute()?;
 
-        wtxn.commit().map_err(Into::into)*/
+        wtxn.commit().map_err(Into::into)
     }
 
     fn search_document(

@@ -15,7 +15,7 @@ bindgen!({
     async: true
 });
 
-use crate::persistence::Index;
+use crate::persistence::{Index, PersistedDocument};
 use crate::{
     CustomPluginConfig, FsAccess, MichelPersistence, PluginConfig, PluginHostConfig, PluginInfo,
 };
@@ -48,7 +48,14 @@ impl<P: MichelPersistence> michel_api::MichelApi for MichelApiForPlugins<P> {
     ) -> Result<()> {
         let persistence = self.persistence.lock().await;
 
-        persistence.add_document(Index { name: index }, serde_json::Map::new())
+        let result = persistence.add_document(Index { name: index }, PersistedDocument::from(document));
+
+        match result {
+            Ok(_) => println!("bien joué... bro"),
+            Err(err) => println!("pardon... bro : {}", err) 
+        };
+
+        Ok(())
     }
 
     async fn search_in_index(
@@ -60,7 +67,9 @@ impl<P: MichelPersistence> michel_api::MichelApi for MichelApiForPlugins<P> {
     }
 
     async fn init_index(&mut self, index: String) -> Result<()> {
-        Ok(())
+        let mut persistence = self.persistence.lock().await;
+
+        persistence.init_index(index)
     }
 }
 
