@@ -21,6 +21,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@tauri-apps/api": "^1.2.0"
+		"@tauri-apps/api": "^1.2.0",
+		"svelte-icons": "^2.1.0"
 	}
 }

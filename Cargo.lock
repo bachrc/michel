@@ -2811,6 +2811,7 @@ dependencies = [
  "lazy_static",
  "serde",
  "serde_json",
+ "tokio",
  "wasi-cap-std-sync",
  "wasmtime",
 ]

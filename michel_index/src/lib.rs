@@ -1,9 +1,7 @@
 use anyhow::{anyhow, Result};
-use michel_core::MichelPersistence;
-use milli::documents::{DocumentsBatchBuilder, DocumentsBatchReader};
-use milli::{heed, update, Filter, Search, SearchResult};
+use michel_core::persistence::MichelPersistence;
+use milli::{heed, Search, SearchResult};
 use std::collections::HashMap;
-use std::io::Cursor;
 use tempdir;
 use tempdir::TempDir;
 
@@ -28,11 +26,11 @@ impl MilliPersistence {
         })
     }
 
-    fn get_index(&self, index: michel_core::Index) -> Option<&milli::Index> {
+    fn get_index(&self, index: michel_core::persistence::Index) -> Option<&milli::Index> {
         return self.indexes.get(&index.name);
     }
 
-    fn create_index(&mut self, michel_index: michel_core::Index) -> Result<()> {
+    fn create_index(&mut self, michel_index: michel_core::persistence::Index) -> Result<()> {
         if self.indexes.contains_key(&michel_index.name) {
             return Err(anyhow!("index already exists"));
         }
@@ -52,7 +50,14 @@ impl MilliPersistence {
 }
 
 impl MichelPersistence for MilliPersistence {
-    fn add_document(&self, index: michel_core::Index, document: Document) -> Result<()> {
+    fn add_document(
+        &self,
+        index: michel_core::persistence::Index,
+        document: Document,
+    ) -> Result<()> {
+        Ok(())
+
+        /*
         let milli_index = self.get_index(index).ok_or(anyhow!("index not created"))?;
 
         // Create a batch builder to convert json_documents into milli's format
@@ -82,12 +87,12 @@ impl MichelPersistence for MilliPersistence {
         indexing_result?; // check to make sure there is no UserError
         builder.execute()?;
 
-        wtxn.commit().map_err(Into::into)
+        wtxn.commit().map_err(Into::into)*/
     }
 
     fn search_document(
         &self,
-        index: michel_core::Index,
+        index: michel_core::persistence::Index,
         query: String,
         limit: Option<u32>,
     ) -> Result<Vec<Document>> {

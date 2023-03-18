@@ -21,7 +21,7 @@ lazy_static! {
 }
 
 const MICHEL_CONFIG_FOLDER: &str = "michel";
-const MICHEL_CONFIG_FILENAME: &str = "config.toml";
+//const MICHEL_CONFIG_FILENAME: &str = "config.toml";
 
 mod config;
 mod search_bar;
@@ -97,11 +97,11 @@ fn show_settings(app: &AppHandle<Wry>) {
 fn toggle_search_bar_visibility(app: &AppHandle<Wry>) {
     let window = app.get_window("search-bar").unwrap();
     if window.is_visible().unwrap() {
-        window.hide();
+        window.hide().unwrap();
     } else {
-        window.show();
-        window.center();
-        window.set_focus();
+        window.show().unwrap();
+        window.center().unwrap();
+        window.set_focus().unwrap();
     }
 }
 
@@ -132,7 +132,10 @@ async fn main() -> Result<()> {
             Ok(())
         })
         .manage(instance)
-        .invoke_handler(tauri::generate_handler![settings::get_plugins_list])
+        .invoke_handler(tauri::generate_handler![
+            settings::get_plugins_list,
+            settings::run_plugin_index
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 

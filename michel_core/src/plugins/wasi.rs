@@ -1,7 +1,8 @@
 use anyhow::Result;
 use host::WasiCtx;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use wasi_cap_std_sync::dir::Dir;
 use wasi_cap_std_sync::WasiCtxBuilder;
 use wasmtime::component::bindgen;
@@ -14,17 +15,22 @@ bindgen!({
     async: true
 });
 
-use crate::{CustomPluginConfig, FsAccess, PluginConfig, PluginHostConfig, PluginInfo};
+use crate::persistence::Index;
+use crate::{
+    CustomPluginConfig, FsAccess, MichelPersistence, PluginConfig, PluginHostConfig, PluginInfo,
+};
 use async_trait::async_trait;
 
-pub struct MichelApiForPlugins;
+pub struct MichelApiForPlugins<P: MichelPersistence> {
+    persistence: Arc<Mutex<P>>,
+}
 
-impl types::Types for MichelApiForPlugins {}
+impl<P: MichelPersistence> types::Types for MichelApiForPlugins<P> {}
 
 #[async_trait]
-impl michel_api::MichelApi for MichelApiForPlugins {
+impl<P: MichelPersistence> michel_api::MichelApi for MichelApiForPlugins<P> {
     async fn hi(&mut self, name: String) -> Result<String> {
-        todo!()
+        Ok(String::from("yo"))
     }
 
     async fn send_entry_for_input(
@@ -40,7 +46,9 @@ impl michel_api::MichelApi for MichelApiForPlugins {
         index: String,
         document: types::Document,
     ) -> Result<()> {
-        todo!()
+        let persistence = self.persistence.lock().await;
+
+        persistence.add_document(Index { name: index }, serde_json::Map::new())
     }
 
     async fn search_in_index(
@@ -52,7 +60,7 @@ impl michel_api::MichelApi for MichelApiForPlugins {
     }
 
     async fn init_index(&mut self, index: String) -> Result<()> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -62,13 +70,13 @@ fn wasi_dir_from_path<P: AsRef<Path>>(path: P) -> Dir {
     Dir::from_cap_std(wasi_cap_std_sync::Dir::from_std_file(file))
 }
 
-pub struct Ctx {
+pub struct Ctx<P: MichelPersistence> {
     wasi: WasiCtx,
-    michel: MichelApiForPlugins,
+    michel: MichelApiForPlugins<P>,
 }
 
-impl Ctx {
-    async fn new() -> Ctx {
+impl<P: MichelPersistence> Ctx<P> {
+    async fn new(persistence: Arc<Mutex<P>>) -> Ctx<P> {
         let mut wasi = WasiCtxBuilder::new()
             .inherit_stderr()
             .inherit_stdin()
@@ -81,25 +89,28 @@ impl Ctx {
 
         Ctx {
             wasi,
-            michel: MichelApiForPlugins,
+            michel: MichelApiForPlugins { persistence },
         }
     }
 }
 
-pub struct PluginInstance {
+pub struct PluginInstance<P: MichelPersistence> {
     pub bindings: Michel,
-    pub store: Arc<Mutex<Store<Ctx>>>,
+    pub store: Arc<Mutex<Store<Ctx<P>>>>,
 }
 
-impl PluginInstance {
+impl<P: MichelPersistence> PluginInstance<P> {
     pub async fn get_infos(&self) -> Result<types::PluginInfo> {
-        let mut guard = self.store.lock().expect("getting store content");
+        let mut guard = self.store.lock().await;
         let store = guard.as_context_mut();
 
         self.bindings.plugin_api.call_info(store).await
     }
 
-    pub async fn init<T: AsRef<Path>>(path: T) -> Result<PluginInstance> {
+    pub async fn init<T: AsRef<Path>>(
+        path: T,
+        persistence: Arc<Mutex<P>>,
+    ) -> Result<PluginInstance<P>> {
         let mut config = Config::new();
         config.wasm_component_model(true);
         config.async_support(true);
@@ -107,11 +118,11 @@ impl PluginInstance {
         // Modules can be compiled through either the text or binary format
         let engine = Engine::new(&config)?;
         let component = Component::from_file(&engine, path)?;
-        let mut linker: Linker<Ctx> = Linker::new(&engine);
+        let mut linker: Linker<Ctx<P>> = Linker::new(&engine);
         host::add_to_linker(&mut linker, |ctx| &mut ctx.wasi)?;
         Michel::add_to_linker(&mut linker, |ctx| &mut ctx.michel)?;
 
-        let mut store = Store::new(&engine, Ctx::new().await);
+        let mut store = Store::new(&engine, Ctx::new(persistence).await);
         let (bindings, _) = Michel::instantiate_async(&mut store, &component, &linker).await?;
 
         Ok(PluginInstance {
@@ -124,6 +135,7 @@ impl PluginInstance {
 impl From<types::PluginInfo> for PluginInfo {
     fn from(value: types::PluginInfo) -> Self {
         PluginInfo {
+            identifier: value.identifier,
             name: value.name,
             description: value.description,
             version: value.version,
@@ -137,6 +149,7 @@ impl From<types::PluginConfigResult> for PluginConfig {
     fn from(value: types::PluginConfigResult) -> Self {
         Self {
             host: PluginHostConfig {
+                enabled: true,
                 fs_access: value.fs_access.into_iter().map(FsAccess::from).collect(),
             },
             custom: CustomPluginConfig,
