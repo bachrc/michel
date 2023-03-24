@@ -3,6 +3,7 @@ default interface types {
     text(string),
     datetime(string),
     number(u32),
+    boolean(bool)
   }
 
   record field {
@@ -50,6 +51,7 @@ interface michel-api {
   hi: func(name: string) -> string
   send-entry-for-input: func(input: string, entries: list<entry>)
   new-document-for-index: func(index: string, document: document)
+  new-documents-for-index: func(index: string, documents: list<document>)
   search-in-index: func(index: string, query: string) -> list<document>
   init-index: func(index: string)
 }

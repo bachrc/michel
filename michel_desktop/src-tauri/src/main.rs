@@ -134,7 +134,8 @@ async fn main() -> Result<()> {
         .manage(instance)
         .invoke_handler(tauri::generate_handler![
             settings::get_plugins_list,
-            settings::run_plugin_index
+            settings::run_plugin_index,
+            search_bar::fetch_entries_for_input
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

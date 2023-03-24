@@ -1,3 +1,5 @@
+use michel_core::{Entry, MichelInstance};
+use michel_index::MilliPersistence;
 use tauri::{AppHandle, GlobalShortcutManager, Manager, Wry};
 
 pub fn register_search_shortcut(app: AppHandle<Wry>) {
@@ -16,4 +18,12 @@ pub fn register_search_shortcut(app: AppHandle<Wry>) {
             }
         })
         .unwrap();
+}
+
+#[tauri::command]
+pub async fn fetch_entries_for_input(
+    input: String,
+    michel: tauri::State<'_, MichelInstance<MilliPersistence>>,
+) -> Result<Vec<Entry>, String> {
+    Ok(michel.entries_for_input(&input).await)
 }

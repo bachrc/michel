@@ -1,25 +1,41 @@
-<script>
-    //import { onFocus } from 'svelte'
-    let usernameInput
+<script lang="ts">
+    import {invoke} from "@tauri-apps/api/tauri";
 
-    function focusOnInput() {
-        usernameInput.focus();
+    let entries: Entry[] = [];
+    let timer;
+    let value = "";
+
+    function on_key_pressed(e) {
+        clearTimeout(timer);
+
+        timer = setTimeout(fetch_entries, 1000);
     }
+
+    function fetch_entries() {
+        invoke("fetch_entries_for_input", {input: value})
+            .then((returned_entries: Entry[]) => {
+                entries = returned_entries;
+            })
+    }
+
 </script>
 
-<div class="panel" on:focus={focusOnInput}>
+<div class="panel" >
     <header>
         MICHEL
     </header>
     <nav>
         <input
             name="search-content"
-            bind:this={usernameInput}
+            bind:value
+            on:keyup={on_key_pressed}
             class="search-bar"
         />
     </nav>
     <main>
-        pouet
+        {#each entries as entry}
+            <span>{entry.title}</span>
+        {/each}
     </main>
 
 </div>
@@ -52,7 +68,8 @@
     }
 
     main {
-        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
     }
 
 </style>

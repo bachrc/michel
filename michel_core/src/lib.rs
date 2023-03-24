@@ -4,11 +4,18 @@ mod plugins;
 use crate::persistence::MichelPersistence;
 use anyhow::{anyhow, Result};
 use plugins::wasi::PluginInstance;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use wasmtime::AsContextMut;
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Entry {
+    title: String,
+    description: String,
+}
 
 pub struct FsAccess {
     host_path: PathBuf,
@@ -80,6 +87,25 @@ impl<P: MichelPersistence> Plugin<P> {
         };
     }
 
+    pub async fn entries_for_input(&self, input: &str) -> Vec<Entry> {
+        let mut guard = self.instance.store.lock().await;
+        let store = guard.as_context_mut();
+
+        return self
+            .instance
+            .bindings
+            .plugin_api()
+            .call_for_input(store, input)
+            .await
+            .expect("fetch entries")
+            .iter()
+            .map(|it| Entry {
+                title: it.title.clone(),
+                description: it.description.clone(),
+            })
+            .collect();
+    }
+
     pub fn identifier(&self) -> String {
         String::from(&self.infos.identifier)
     }
@@ -136,6 +162,21 @@ impl<P: MichelPersistence> MichelInstance<P> {
         self.plugins = plugins;
 
         Ok(())
+    }
+
+    pub async fn entries_for_input(&self, input: &str) -> Vec<Entry> {
+        println!("Fetching entries for {}", input);
+
+        let mut entries = Vec::new();
+
+        for plugin in &self.plugins {
+            println!("fetching entries for plugin {}", plugin.name());
+            let mut plugin_entries = plugin.entries_for_input(input).await;
+            println!("the entries are {:?}", plugin_entries);
+            entries.append(plugin_entries.as_mut());
+        }
+
+        entries
     }
 
     pub fn plugins(&self) -> &Vec<Plugin<P>> {

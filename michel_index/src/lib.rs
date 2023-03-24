@@ -40,12 +40,9 @@ impl MichelPersistence for MilliPersistence {
         }
 
         let path = TempDir::new(&index_name)?;
-        println!(
-            "Le répertoire temp c'est ça : {}",
-            String::from(&path.path().to_string_lossy().to_string())
-        );
+
         std::fs::create_dir_all(&path)?;
-        println!("isok");
+
         let mut options = heed::EnvOpenOptions::new();
         options.map_size(MAX_MAP_SIZE);
 
@@ -106,12 +103,13 @@ impl MichelPersistence for MilliPersistence {
         let mut search = Search::new(&rtxn, milli_index);
 
         // Configure the search based on given parameters
-        search.query(query);
+        search.query(&query);
         search.limit(limit.unwrap_or(u32::MAX).try_into()?);
 
         // Get the documents based on the search results
         let SearchResult { documents_ids, .. } = search.execute()?;
         let fields_ids_map = milli_index.fields_ids_map(&rtxn)?;
+
         milli_index
             .documents(&rtxn, documents_ids)?
             .iter()

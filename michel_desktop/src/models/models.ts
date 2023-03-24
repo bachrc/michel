@@ -5,3 +5,8 @@ interface PluginInfo {
     can_index: boolean,
     enable: boolean
 }
+
+interface Entry {
+    title: string,
+    description: string
+}

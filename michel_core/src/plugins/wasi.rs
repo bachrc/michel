@@ -16,6 +16,7 @@ bindgen!({
 });
 
 use crate::persistence::{Index, PersistedDocument};
+use crate::plugins::wasi::michel_api::Document;
 use crate::{
     CustomPluginConfig, FsAccess, MichelPersistence, PluginConfig, PluginHostConfig, PluginInfo,
 };
@@ -48,14 +49,17 @@ impl<P: MichelPersistence> michel_api::MichelApi for MichelApiForPlugins<P> {
     ) -> Result<()> {
         let persistence = self.persistence.lock().await;
 
-        let result = persistence.add_document(Index { name: index }, PersistedDocument::from(document));
-
-        match result {
-            Ok(_) => println!("bien joué... bro"),
-            Err(err) => println!("pardon... bro : {}", err) 
-        };
+        let _ = persistence.add_document(Index { name: index }, PersistedDocument::from(document));
 
         Ok(())
+    }
+
+    async fn new_documents_for_index(
+        &mut self,
+        index: String,
+        document: Vec<Document>,
+    ) -> Result<()> {
+        todo!()
     }
 
     async fn search_in_index(
@@ -63,7 +67,16 @@ impl<P: MichelPersistence> michel_api::MichelApi for MichelApiForPlugins<P> {
         index: String,
         query: String,
     ) -> Result<Vec<types::Document>> {
-        todo!()
+        let persistence = self.persistence.lock().await;
+
+        let vec = persistence
+            .search_document(Index { name: index }, query, 10.into())?
+            .iter()
+            .map(|document| types::Document::try_from(document))
+            .filter_map(|document| document.ok())
+            .collect();
+
+        Ok(vec)
     }
 
     async fn init_index(&mut self, index: String) -> Result<()> {

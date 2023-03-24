@@ -1,6 +1,5 @@
 use crate::plugins::wasi::types;
-use crate::plugins::wasi::types::Value;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 pub(crate) type PersistedDocument = serde_json::Map<String, serde_json::Value>;
 
@@ -14,18 +13,66 @@ impl From<types::Document> for PersistedDocument {
         );
 
         for field in value.fields {
-            map.insert(field.name, from_wasi_to_json(&field.value));
+            map.insert(field.name, serde_json::Value::from(field.value));
         }
 
         map
     }
 }
 
-fn from_wasi_to_json(wasi_value: &Value) -> serde_json::Value {
-    match wasi_value {
-        Value::Text(text) => text.clone().into(),
-        Value::Datetime(date) => date.clone().into(),
-        Value::Number(number) => number.clone().into(),
+impl TryFrom<&PersistedDocument> for types::Document {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &PersistedDocument) -> Result<Self> {
+        let identifier = value
+            .get("id")
+            .map(|value| value.as_str())
+            .ok_or(anyhow!("Invalid identifier value"))?
+            .ok_or(anyhow!("No identifier in document"))?;
+
+        println!("le identifier est mis ici : {}", &identifier);
+
+        let fields: Vec<types::Field> = value
+            .into_iter()
+            .filter(|(field_name, value)| field_name.clone() != "id")
+            .map(|(field_name, value)| (field_name, types::Value::try_from(value.clone())))
+            .filter(|(_field_name, value)| value.is_ok())
+            .map(|(field_name, value)| types::Field {
+                name: field_name.clone(),
+                value: value.unwrap(),
+            })
+            .collect();
+
+        return Ok(types::Document {
+            identifier: String::from(identifier),
+            fields,
+        });
+    }
+}
+
+impl TryFrom<serde_json::Value> for types::Value {
+    type Error = anyhow::Error;
+
+    fn try_from(value: serde_json::Value) -> Result<Self> {
+        match value {
+            serde_json::Value::Bool(value) => Ok(types::Value::Boolean(value)),
+            serde_json::Value::Number(number) => Ok(types::Value::Number(u32::try_from(
+                number.as_u64().ok_or(anyhow!("value is not a number"))?,
+            )?)),
+            serde_json::Value::String(text) => Ok(types::Value::Text(text)),
+            _ => Err(anyhow!("value type not handled")),
+        }
+    }
+}
+
+impl From<types::Value> for serde_json::Value {
+    fn from(value: types::Value) -> Self {
+        match value {
+            types::Value::Text(text) => text.clone().into(),
+            types::Value::Datetime(date) => date.clone().into(),
+            types::Value::Number(number) => number.clone().into(),
+            types::Value::Boolean(bool) => bool.into(),
+        }
     }
 }
 

@@ -78,7 +78,7 @@
         "center": true,
         "decorations": false,
         "width": 800,
-        "url": "search-bar.html",
+        "url": "/search-bar",
         "visible": false,
         "skipTaskbar": true
       }, {
@@ -90,7 +90,7 @@
         "center": true,
         "decorations": true,
         "width": 1200,
-        "url": "settings.html",
+        "url": "/settings",
         "visible": false,
         "skipTaskbar": false
       }
