@@ -10,7 +10,7 @@ use wasmtime::component::{Component, Linker};
 use wasmtime::{AsContextMut, Config, Engine, Store};
 
 bindgen!({
-    world: "plugin",
+    world: "plugong",
     path: "../wit",
     async: true
 });
@@ -57,9 +57,16 @@ impl<P: MichelPersistence> michel_api::MichelApi for MichelApiForPlugins<P> {
     async fn new_documents_for_index(
         &mut self,
         index: String,
-        document: Vec<Document>,
+        documents: Vec<Document>,
     ) -> Result<()> {
-        todo!()
+        let persistence = self.persistence.lock().await;
+
+        let _ = persistence.add_documents(
+            Index { name: index },
+            documents.into_iter().map(PersistedDocument::from).collect(),
+        );
+
+        Ok(())
     }
 
     async fn search_in_index(

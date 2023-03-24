@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use michel_core::persistence::MichelPersistence;
+use michel_core::persistence::{Index, MichelPersistence};
 use milli::documents::{DocumentsBatchBuilder, DocumentsBatchReader};
 use milli::{heed, update, Search, SearchResult};
 use std::collections::HashMap;
@@ -64,6 +64,45 @@ impl MichelPersistence for MilliPersistence {
         let mut builder = DocumentsBatchBuilder::new(Vec::new());
 
         builder.append_json_object(&document)?;
+
+        // Flush the contents of the builder and retreive the buffer to make a batch reader
+        let buff = builder.into_inner()?;
+        let reader = DocumentsBatchReader::from_reader(Cursor::new(buff))?;
+
+        // Create the configs needed for the batch document addition
+        let indexer_config = update::IndexerConfig::default();
+        let indexing_config = update::IndexDocumentsConfig::default();
+
+        // Make an index write transaction with a batch step to index the new documents
+        let mut wtxn = milli_index.write_txn()?;
+        let (builder, indexing_result) = update::IndexDocuments::new(
+            &mut wtxn,
+            milli_index,
+            &indexer_config,
+            indexing_config,
+            |_| (),
+            || false,
+        )?
+        .add_documents(reader)?;
+        indexing_result?; // check to make sure there is no UserError
+        builder.execute()?;
+
+        wtxn.commit().map_err(Into::into)
+    }
+
+    fn add_documents(
+        &self,
+        index: Index,
+        documents: Vec<michel_core::persistence::PersistedDocument>,
+    ) -> Result<()> {
+        let milli_index = self.get_index(index).ok_or(anyhow!("index not created"))?;
+
+        // Create a batch builder to convert json_documents into milli's format
+        let mut builder = DocumentsBatchBuilder::new(Vec::new());
+
+        for document in documents {
+            builder.append_json_object(&document)?
+        }
 
         // Flush the contents of the builder and retreive the buffer to make a batch reader
         let buff = builder.into_inner()?;

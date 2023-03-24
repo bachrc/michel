@@ -25,6 +25,8 @@ anyhow = "1.0.69"
 toml = "0.7.2"
 futures = "0.3.26"
 tokio = "1.26.0"
+tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "dev" }
+log = "0.4.17"
 
 [features]
 # by default Tauri runs in production mode

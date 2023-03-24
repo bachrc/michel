@@ -2,6 +2,8 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#[macro_use]
+extern crate log;
 
 use lazy_static::lazy_static;
 use std::fs::File;
@@ -11,8 +13,10 @@ use std::{env, fs, process};
 use anyhow::{anyhow, Result};
 use michel_core::{MichelConfig, MichelInstance};
 use michel_index::MilliPersistence;
+use serde::de::IntoDeserializer;
 use tauri::CustomMenuItem;
 use tauri::{AppHandle, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Wry};
+use tauri_plugin_log::LogTarget;
 
 lazy_static! {
     static ref PLUGINS_CONFIG_PATH: PathBuf =
@@ -88,10 +92,20 @@ fn handle_tray_event(app: &AppHandle<Wry>, event: SystemTrayEvent) {
 }
 
 fn show_settings(app: &AppHandle<Wry>) {
-    app.get_window("settings")
-        .expect("settings window to be present")
-        .show()
-        .unwrap()
+    let window = app.get_window("settings");
+    match window {
+        Some(settings) => settings.show().unwrap(),
+        None => {
+            let _ = tauri::WindowBuilder::new(
+                app,
+                "settings",
+                tauri::WindowUrl::App("/settings".into()),
+            )
+            .focused(true)
+            .build()
+            .unwrap();
+        }
+    }
 }
 
 fn toggle_search_bar_visibility(app: &AppHandle<Wry>) {
@@ -121,6 +135,11 @@ async fn main() -> Result<()> {
     .await?;
 
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
+                .build(),
+        )
         .system_tray(tray)
         .on_system_tray_event(handle_tray_event)
         .setup(move |app| {

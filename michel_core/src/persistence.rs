@@ -1,7 +1,7 @@
 use crate::plugins::wasi::types;
 use anyhow::{anyhow, Result};
 
-pub(crate) type PersistedDocument = serde_json::Map<String, serde_json::Value>;
+pub type PersistedDocument = serde_json::Map<String, serde_json::Value>;
 
 impl From<types::Document> for PersistedDocument {
     fn from(value: types::Document) -> Self {
@@ -30,11 +30,9 @@ impl TryFrom<&PersistedDocument> for types::Document {
             .ok_or(anyhow!("Invalid identifier value"))?
             .ok_or(anyhow!("No identifier in document"))?;
 
-        println!("le identifier est mis ici : {}", &identifier);
-
         let fields: Vec<types::Field> = value
             .into_iter()
-            .filter(|(field_name, value)| field_name.clone() != "id")
+            .filter(|(field_name, _)| field_name.clone() != "id")
             .map(|(field_name, value)| (field_name, types::Value::try_from(value.clone())))
             .filter(|(_field_name, value)| value.is_ok())
             .map(|(field_name, value)| types::Field {
@@ -83,6 +81,7 @@ pub struct Index {
 pub trait MichelPersistence: Send + Sync {
     fn init_index(&mut self, name: String) -> Result<()>;
     fn add_document(&self, index: Index, document: PersistedDocument) -> Result<()>;
+    fn add_documents(&self, index: Index, documents: Vec<PersistedDocument>) -> Result<()>;
     fn search_document(
         &self,
         index: Index,
