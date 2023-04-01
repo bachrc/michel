@@ -3,5 +3,7 @@
 members = [
     "michel_desktop/src-tauri",
     "michel_core",
-    "michel_index"
+    "michel_index",
+    "michel_server",
+    "michel_webui"
 ]

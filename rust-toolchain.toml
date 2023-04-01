@@ -1,0 +1,4 @@
+[toolchain]
+profile="default"
+channel="1.68.2"
+targets=["wasm32-wasi", "wasm32-unknown-unknown"]

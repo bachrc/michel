@@ -1,5 +1,6 @@
 <script lang="ts">
     import {invoke} from "@tauri-apps/api/tauri";
+    import Entry from "../../components/Entry.svelte";
 
     let entries: Entry[] = [];
     let timer;
@@ -8,7 +9,7 @@
     function on_key_pressed(e) {
         clearTimeout(timer);
 
-        timer = setTimeout(fetch_entries, 1000);
+        timer = setTimeout(fetch_entries, 300);
     }
 
     function fetch_entries() {
@@ -17,7 +18,6 @@
                 entries = returned_entries;
             })
     }
-
 </script>
 
 <div class="panel" >
@@ -34,7 +34,7 @@
     </nav>
     <main>
         {#each entries as entry}
-            <span>{entry.title}</span>
+            <Entry entry={entry} />
         {/each}
     </main>
 
@@ -70,6 +70,7 @@
     main {
         display: flex;
         flex-direction: column;
+        gap: 3px;
     }
 
 </style>

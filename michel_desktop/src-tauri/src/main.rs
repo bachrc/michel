@@ -102,6 +102,7 @@ fn show_settings(app: &AppHandle<Wry>) {
                 tauri::WindowUrl::App("/settings".into()),
             )
             .focused(true)
+            .title("Michel Settings")
             .build()
             .unwrap();
         }
