@@ -3062,6 +3062,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "michel_webui"
+version = "0.1.0"
+
+[[package]]
 name = "milli"
 version = "1.0.0"
 source = "git+https://github.com/meilisearch/meilisearch#3d1046369c6f114239c84d18b3afc61f4a63b571"
